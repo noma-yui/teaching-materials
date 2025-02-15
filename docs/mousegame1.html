@@ -1,0 +1,206 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Mouse Game 1</title>
+</head>
+
+<body>
+
+  <center>
+    <div>Mouse Game. マウスゲーム </div>
+  </center>
+  <center>
+    <div>Run away from the enemies. </div>
+  </center>
+  <center>
+    <div>敵から逃げてください。 </div>
+  </center>
+  <center>
+    <div>Click the following rectangle to start the game. </div>
+  </center>
+  <center>
+    <div>下の四角形をクリックするとゲームが始まります。 </div>
+  </center>
+
+
+  <center>
+    <canvas id="myCanvas1" width="200" height="100"
+      style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
+  </center>
+  <script>
+    var width1 = 300;
+    var height1 = 300;
+    var canvasId = "myCanvas1";
+    const canvas1 = document.getElementById(canvasId);
+    const context1 = canvas1.getContext("2d");
+    var framemillisec = 20;
+    var frameCount = 0;
+    var myBlock;
+    var myBlock2;
+    var enemyBlocks = [];
+    var numOfEne = 10;
+    var maxV = 50;
+    var mousex;
+    var mousey;
+    var gameInterval;
+    var gameStatus = false;
+
+    function init() {
+      canvas1.width = width1;
+      canvas1.height = height1;
+      canvas1.addEventListener('click', startGame, false);
+      window.addEventListener('mousemove', function (e) {
+        mousex = e.pageX;
+        mousey = e.pageY;
+      }
+      );
+    }
+
+
+    function startGame() {
+      if (gameStatus === false) {
+        // start game
+        clearCanvas();
+        myBlock = new block(30, 30, canvas1.width / 2, canvas1.height / 2, "#0000FF");
+
+        enemyBlocks = [];
+        for (ii = 0; ii < numOfEne; ii++) {
+          enemyBlocks.push(new block(30, 30, 30, canvas1.height - 30, "#404040"));
+          enemyBlocks[ii].vx = Math.floor(Math.random() * maxV);
+          enemyBlocks[ii].vy = Math.floor(Math.random() * maxV);
+        }
+
+        frameCount = 0;
+        // call func
+        gameInterval = setInterval(updateGame, framemillisec);
+        gameStatus = true;
+      }
+    }
+
+    function stopGame() {
+      clearInterval(gameInterval);
+      gameStatus = false;
+      context1.textAlign = "center"
+      context1.fillText("Game Over", canvas1.width / 2, 130);
+    }
+
+    function block(width, height, posx, posy, color) {
+      this.width = width;
+      this.height = height;
+      this.posx = posx;
+      this.posy = posy;
+      this.color = color;
+    }
+
+    function drawBlock(block) {
+      context1.fillStyle = block.color;
+      context1.fillRect(block.posx, block.posy, block.width, block.height);
+    }
+
+    function drawEnemyBlock(block) {
+      context1.fillStyle = block.color;
+      context1.fillRect(block.posx, block.posy, block.width, block.height);
+      context1.strokeRect(block.posx, block.posy, block.width, block.height);
+    }
+
+    function clearCanvas() {
+      context1.clearRect(0, 0, canvas1.width, canvas1.height);
+    }
+
+
+    function updateGame() {
+
+      // mouse move
+      myBlock.posx = mousex - canvas1.offsetLeft - myBlock.width / 2;
+      myBlock.posy = mousey - canvas1.offsetTop - myBlock.height / 2;
+      // object position
+      for (ii = 0; ii < numOfEne; ii++) {
+        enemyBlocks[ii].posx = enemyBlocks[ii].posx + enemyBlocks[ii].vx / 1000 * framemillisec;
+        enemyBlocks[ii].posy = enemyBlocks[ii].posy + enemyBlocks[ii].vy / 1000 * framemillisec;
+        limitPos(enemyBlocks[ii]);
+        bounceBlock(enemyBlocks[ii]);
+      }
+
+      // restrict block position so it doesn't go outside the screen
+      limitPos(myBlock);
+
+      var hitflag = false;
+      for (ii = 0; ii < numOfEne; ii++) {
+        hitflag = ishit(myBlock, enemyBlocks[ii]);
+        if (hitflag) {
+          break;
+        }
+      }
+
+      frameCount += 1;
+
+      clearCanvas();
+      drawBlock(myBlock);
+      for (ii = 0; ii < numOfEne; ii++) {
+        drawEnemyBlock(enemyBlocks[ii]);
+      }
+      drawScore();
+
+      if (hitflag) {
+        stopGame();
+      }
+    }
+
+    function limitPos(block) {
+      // restrict block position so it doesn't go outside the screen
+      tmpx = block.posx;
+      tmpy = block.posy;
+
+      if (tmpx <= 0) {
+        tmpx = 0;
+      } else if (tmpx + block.width >= canvas1.width) {
+        tmpx = canvas1.width - block.width;
+      }
+      if (tmpy <= 0) {
+        tmpy = 0;
+      } else if (tmpy + block.height >= canvas1.height) {
+        tmpy = canvas1.height - block.height;
+      }
+      block.posx = tmpx;
+      block.posy = tmpy;
+    }
+
+    function bounceBlock(block) {
+      if (tmpx <= 0) {
+        block.vx = - block.vx;
+      } else if (tmpx + block.width >= canvas1.width) {
+        block.vx = - block.vx;
+      }
+      if (tmpy <= 0) {
+        block.vy = - block.vy;
+      } else if (tmpy + block.height >= canvas1.height) {
+        block.vy = - block.vy;
+      }
+    }
+
+    function ishit(block1, block2) {
+      if ((block1.posx + block1.width <= block2.posx) ||
+        (block1.posx >= block2.posx + block2.width) ||
+        (block1.posy + block1.height <= block2.posy) ||
+        (block1.posy >= block2.posy + block2.height)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+
+    function drawScore() {
+      context1.fillStyle = "#000000";
+      context1.font = "30px Arial";
+      context1.textAlign = "center"
+      context1.fillText(frameCount, canvas1.width / 2, 30);
+    }
+
+    init();
+  </script>
+
+</body>
+
+</html>
