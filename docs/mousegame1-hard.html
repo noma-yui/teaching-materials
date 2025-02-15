@@ -2,13 +2,13 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Mouse Game 1</title>
+  <title>Mouse Game 1 Hard</title>
 </head>
 
 <body>
 
   <center>
-    <div>Mouse Game. マウスゲーム </div>
+    <div>Mouse Game Hard. マウスゲームハード </div>
   </center>
   <center>
     <div>Run away from the enemies. </div>
@@ -39,8 +39,8 @@
     var myBlock;
     var myBlock2;
     var enemyBlocks = [];
-    var numOfEne = 10;
-    var maxV = 50;
+    var numOfEne = 15;
+    var maxV = 100;
     var mousex;
     var mousey;
     var gameInterval;
@@ -121,7 +121,7 @@
         limitPos(enemyBlocks[ii]);
         bounceBlock(enemyBlocks[ii]);
       }
-
+      
       // restrict block position so it doesn't go outside the screen
       limitPos(myBlock);
 
