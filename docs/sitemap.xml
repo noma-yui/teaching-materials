@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+
+<!--  created with free sitemap generation system www.sitemapxml.jp  --> 
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/mousegame1.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/mousegame1-hard.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/mousegame1-superhard.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/typegame1-easy.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/typegame1-easy2.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/typegame1.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+<url>
+  <loc>https://noma-yui.github.io/teaching-materials/typegame1-hard.html</loc>
+  <changefreq>yearly</changefreq>
+</url>
+
+</urlset>
