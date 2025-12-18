@@ -3,31 +3,42 @@
 <head>
   <meta charset="utf-8">
   <title>Mouse Game 1 Super Hard</title>
+  <style>
+    div.center-text {
+      text-align: center;
+    }
+
+    div.center-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
 </head>
 
 <body>
 
-  <center>
+  <div class="center-text">
     <div>Mouse Game Super Hard. マウスゲームスーパーハード </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>Run away from the enemies. </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>敵から逃げてください。 </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>Click the following rectangle to start the game. </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>下の四角形をクリックするとゲームが始まります。 </div>
-  </center>
+  </div>
 
 
-  <center>
+  <div class="center-box">
     <canvas id="myCanvas1" width="200" height="100"
       style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
-  </center>
+  </div>
   <script>
     var width1 = 600;
     var height1 = 600;
@@ -91,12 +102,12 @@
       this.color = color;
     }
 
-    function drawBlock(block){
+    function drawBlock(block) {
       context1.fillStyle = block.color;
       context1.fillRect(block.posx, block.posy, block.width, block.height);
     }
 
-    function drawEnemyBlock(block){
+    function drawEnemyBlock(block) {
       context1.fillStyle = block.color;
       context1.fillRect(block.posx, block.posy, block.width, block.height);
       context1.strokeRect(block.posx, block.posy, block.width, block.height);
@@ -181,9 +192,9 @@
         (block1.posy + block1.height <= block2.posy) ||
         (block1.posy >= block2.posy + block2.height)) {
         return false;
-      }else{
+      } else {
         return true;
-      }      
+      }
     }
 
 

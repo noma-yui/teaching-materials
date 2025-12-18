@@ -3,31 +3,42 @@
 <head>
   <meta charset="utf-8">
   <title>Type Game 1 Easy</title>
+  <style>
+    div.center-text {
+      text-align: center;
+    }
+
+    div.center-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
 </head>
 
 <body>
 
-  <center>
+  <div class="center-text">
     <div>タイプゲーム Easy</div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>Place your index fingers on F and J, and press the keys that appear on the screen. </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>FとJに人差し指を置いて、画面に現れる文字のキーを押してください。 </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>Click the following rectangle to start the game. </div>
-  </center>
-  <center>
+  </div>
+  <div class="center-text">
     <div>下の四角形をクリックするとゲームが始まります。 </div>
-  </center>
+  </div>
 
 
-  <center>
+  <div class="center-box">
     <canvas id="myCanvas1" width="200" height="100"
       style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
-  </center>
+  </div>
   <script>
     var width1 = 300;
     var height1 = 300;
@@ -48,7 +59,7 @@
     var gameInterval;
     var gameStatus = false;
     var keydown = {}
-    var taisyoukeys = ['J','F']
+    var taisyoukeys = ['J', 'F']
     //var taisyoukeys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', '+']
     var score;
 
@@ -70,7 +81,7 @@
       score = 0;
     }
 
- 
+
     function calckeydown(key) {
       //大文字化
       key = key.toUpperCase();
@@ -131,7 +142,7 @@
           break;
         }
       }
-      
+
       if (keydown[tmpkey] && enemyBlocks[0].letter === tmpkey) {
         // キーが押されていて、それが文字と一緒のとき
         for (ii = 0; ii < numOfEne; ii++) {
@@ -140,7 +151,7 @@
         }
         // スコアを上げる
         countup_score(1);
-      }else if(keydown[tmpkey] && enemyBlocks[0].letter !== tmpkey){
+      } else if (keydown[tmpkey] && enemyBlocks[0].letter !== tmpkey) {
         // キーが押されていて、それが文字と一緒のとき
         // スコアを下げる
         countup_score(-1);
@@ -157,7 +168,7 @@
       }
     }
 
-    function set_enemyblock_attr(block){
+    function set_enemyblock_attr(block) {
       // 文字
       block.letter = get_randletter();
 
@@ -280,7 +291,7 @@
       context1.fillStyle = "#000000";
       context1.font = "30px Arial";
       context1.textAlign = "right"
-      context1.fillText(score, canvas1.width *0.9, 30);
+      context1.fillText(score, canvas1.width * 0.9, 30);
     }
 
     init();
