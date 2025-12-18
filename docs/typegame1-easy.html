@@ -134,7 +134,7 @@
       score += upval;
     }
 
-    function keihantei() {
+    function keyhantei() {
       // 押されたキーの情報を得る。
       // 二個以上押された場合は知らん。一個だけ取り出す。
       for (tmpkey in keydown) {
@@ -152,7 +152,7 @@
         // スコアを上げる
         countup_score(1);
       } else if (keydown[tmpkey] && enemyBlocks[0].letter !== tmpkey) {
-        // キーが押されていて、それが文字と一緒のとき
+        // キーが押されていて、それが文字と一緒でない
         // スコアを下げる
         countup_score(-1);
       }
@@ -248,7 +248,7 @@
 
 
       // key hanei
-      keihantei();
+      keyhantei();
 
       frameCount += 1;
 
