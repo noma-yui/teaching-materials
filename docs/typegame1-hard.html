@@ -167,7 +167,7 @@
 
       if (keydown[tmpkey] && enemyBlocks[0].letter === tmpkey) {
         // キーが押されていて、それが文字と一緒のとき
-        for (ii = 0; ii < numOfEne; ii++) {
+        for (let ii = 0; ii < numOfEne; ii++) {
           // set attributes
           set_enemyblock_attr(enemyBlocks[ii]);
         }
@@ -210,7 +210,7 @@
 
         enemyBlocks = [];
 
-        for (ii = 0; ii < numOfEne; ii++) {
+        for (let ii = 0; ii < numOfEne; ii++) {
           enemyBlocks.push(new block(30, 30, 100, 0, "#E2E2E2"));
 
           // set attributes
@@ -260,7 +260,7 @@
     function updateGame() {
 
       // object position
-      for (ii = 0; ii < numOfEne; ii++) {
+      for (let ii = 0; ii < numOfEne; ii++) {
         enemyBlocks[ii].posx = enemyBlocks[ii].posx + enemyBlocks[ii].vx / 1000 * framemillisec;
         enemyBlocks[ii].posy = enemyBlocks[ii].posy + enemyBlocks[ii].vy / 1000 * framemillisec;
 
@@ -276,7 +276,7 @@
 
       clearCanvas();
       // drawBlock(myBlock);
-      for (ii = 0; ii < numOfEne; ii++) {
+      for (let ii = 0; ii < numOfEne; ii++) {
         drawEnemyBlock(enemyBlocks[ii]);
       }
       drawScore();

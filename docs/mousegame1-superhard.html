@@ -75,7 +75,7 @@
         myBlock = new block(30, 30, canvas1.width / 2, canvas1.height / 2, "#0000FF");
 
         enemyBlocks = [];
-        for (ii = 0; ii < numOfEne; ii++) {
+        for (let ii = 0; ii < numOfEne; ii++) {
           enemyBlocks.push(new block(30, 30, 30, canvas1.height - 30, "#404040"));
           enemyBlocks[ii].vx = Math.floor(Math.random() * maxV);
           enemyBlocks[ii].vy = Math.floor(Math.random() * maxV);
@@ -124,7 +124,7 @@
       myBlock.posx = mousex - canvas1.offsetLeft - myBlock.width / 2;
       myBlock.posy = mousey - canvas1.offsetTop - myBlock.height / 2;
       // object position
-      for (ii = 0; ii < numOfEne; ii++) {
+      for (let ii = 0; ii < numOfEne; ii++) {
         enemyBlocks[ii].posx = enemyBlocks[ii].posx + enemyBlocks[ii].vx / 1000 * framemillisec;
         enemyBlocks[ii].posy = enemyBlocks[ii].posy + enemyBlocks[ii].vy / 1000 * framemillisec;
         limitPos(enemyBlocks[ii]);
@@ -134,7 +134,7 @@
       limitPos(myBlock);
 
       var hitflag = false;
-      for (ii = 0; ii < numOfEne; ii++) {
+      for (let ii = 0; ii < numOfEne; ii++) {
         hitflag = ishit(myBlock, enemyBlocks[ii]);
         if (hitflag) {
           break;
@@ -145,7 +145,7 @@
 
       clearCanvas();
       drawBlock(myBlock);
-      for (ii = 0; ii < numOfEne; ii++) {
+      for (let ii = 0; ii < numOfEne; ii++) {
         drawEnemyBlock(enemyBlocks[ii]);
       }
       drawScore();
