@@ -1,0 +1,345 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>ドラッグ&ドロップ Drag and Drop</title>
+  <style>
+    div.center-text {
+      text-align: center;
+    }
+
+    div.center-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="center-text">
+    <div>ドラッグ アンド ドロップ ゲーム 1</div>
+  </div>
+  <div class="center-text">
+    <div>Drop the blocks that fall from above into boxes of the same color.
+       Drag and drop to move the boxes at the bottom of the screen.</div>
+  </div>
+  <div class="center-text">
+    <div>上から落ちてくるブロックを同じ色の箱に入れてください。ドラッグアンドドロップで画面したの箱が動きます。</div>
+  </div>
+  <div class="center-text">
+    <div>Click the following rectangle to start the game. </div>
+  </div>
+  <div class="center-text">
+    <div>下の四角形をクリックするとゲームが始まります。 </div>
+  </div>
+
+
+  <div class="center-box">
+    <canvas id="myCanvas1" width="200" height="100"
+      style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
+  </div>
+  <script>
+    var width1 = 300;
+    var height1 = 300;
+    var canvasId = "myCanvas1";
+    const canvas1 = document.getElementById(canvasId);
+    const context1 = canvas1.getContext("2d");
+    var framemillisec = 20;
+    var frameCount = 0;
+    var bgColor = "#f2f2f2";
+    // var myBlock;
+    // var myBlock2;
+    var enemyBlocks = [];
+    // var boxBlocks = [];
+    var maxNumOfEne = 1;
+    var maxNumOfBox = 2;
+    var draggableBlocks = [];
+    // var endNumOfEne = 0;
+    // var restNumOfEne = 0;
+    // var maxV = 50;
+    var maxVx = width1 / 2;
+    var maxVy = height1 / 2;
+    var mousex;
+    var mousey;
+    var dragBoxLeft = 0;
+    var dragBoxTop = 0;
+    var dragId ="";
+    var gameInterval;
+    var gameStatus = false;
+    var isDragging = false;
+    var keydown = {}
+    //var taisyoukeys = ['J','F']
+    // var taisyoukeys = [
+    //   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0'
+    // ]
+
+    var score;
+
+
+    function init() {
+      canvas1.width = width1;
+      canvas1.height = height1;
+      // マウス押下フラグクリア
+      isDragging = false;
+
+      canvas1.addEventListener('click', startGame, false);
+      // マウス押下は canvas 内のみ
+      canvas1.addEventListener('mousedown', function (e) {
+        mousex = e.pageX - canvas1.offsetLeft;
+        mousey = e.pageY - canvas1.offsetTop;
+        [isDraggable, idname, dragBoxLeft, dragBoxTop] = checkDraggableBlock(mousex, mousey);
+        if(isDraggable){
+          isDragging = true;
+          dragId = idname;
+          // 前に来るようにする
+          for(let ii = 0; ii< maxNumOfBox; ii++){
+            if(draggableBlocks[ii].id === dragId){
+              // //debug
+              // console.log(draggableBlocks[ii]);
+
+              tmpBlock = draggableBlocks[ii];
+              draggableBlocks.splice(ii, 1);
+              draggableBlocks.push(tmpBlock);
+             
+              break;
+            }
+          }
+          // //debug
+          // console.log([isDraggable, idname])
+          // console.log([dragBoxLeft, dragBoxTop])
+        }
+        // console.log([mousex, mousey]);
+      }
+      );
+      window.addEventListener('mousemove', function (e) {
+        if(isDragging){
+          for(let ii =0; ii<draggableBlocks.length; ii++){
+            if(draggableBlocks[ii].id === dragId){
+              mousex = e.pageX - canvas1.offsetLeft;
+              mousey = e.pageY - canvas1.offsetTop;
+              draggableBlocks[ii].posx = mousex -dragBoxLeft;
+              // 上下は動かさず
+              // draggableBlocks[ii].posy = mousey -dragBoxTop;
+            }
+          }
+        }
+      }
+      );
+      window.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
+      // スコア
+      score = 0;
+    }
+
+
+    function randint(max) {
+      // 0 から max-1
+      // maxの値は戻らない
+      return Math.floor(Math.random() * max)
+    }
+
+    function get_randcolor() {
+      // 色の文字列をランダムに返す
+      if (randint(2) === 0) {
+        return "#FF0000";
+      } else {
+        return "#0000FF";
+      }
+    }
+
+    function countup_score(upval = 1) {
+      score += upval;
+    }
+
+
+
+    function set_enemyblock_attr(blocks) {
+      for (let ii = 0; ii < maxNumOfEne; ii++) {
+        // 色の文字列
+        color_letter = get_randcolor();
+        blocks[ii].color = color_letter;
+
+        blocks[ii].posy = 0;
+        blocks[ii].vy = maxVy;
+
+        let initialx = randint(width1-blocks[ii].width); // 適当な位置
+        blocks[ii].posx = initialx;
+        blocks[ii].vx = 0;
+      }
+    }
+
+    function checkDragArea(mousex, mousey, block) {
+      if(block.posx <= mousex && mousex <= block.posx + block.width 
+        && block.posy <= mousey && mousey <= block.posy + block.height 
+        ){
+        return true;
+      }
+    }
+    function checkDraggableBlock(mousex, mousey) {
+      // flag と id を返す
+      // 相対ポジションも返す
+      for(let ii=0; ii < draggableBlocks.length; ii++){
+        if(checkDragArea(mousex, mousey, draggableBlocks[ii])){
+          retid = draggableBlocks[ii].id;
+          return [true, retid, (mousex-draggableBlocks[ii].posx), (mousey-draggableBlocks[ii].posy)];
+        }
+      }
+      return [false, "nashi", 0, 0];
+    }
+
+    function ishit(block1, block2) {
+      if ((block1.posx + block1.width <= block2.posx) ||
+        (block1.posx >= block2.posx + block2.width) ||
+        (block1.posy + block1.height <= block2.posy) ||
+        (block1.posy >= block2.posy + block2.height)) {
+        return false;
+      } else {
+        return true;
+      }
+    }
+
+    function startGame() {
+      if (gameStatus === false) {
+        // start game
+        clearCanvas();
+
+        // set draggable
+        draggableBlocks = [];
+        draggableBlocks.push(new block(45, 45, 90, canvas1.height - 30, "#FF0000"));
+        draggableBlocks.push(new block(45, 45, 160, canvas1.height - 30, "#0000FF"));
+        // set id
+        draggableBlocks[0].id = "id0";
+        draggableBlocks[1].id = "id1";
+        
+        // 上から落ちてくるエネミー
+        enemyBlocks = [];
+        for (let ii = 0; ii < maxNumOfEne; ii++) {
+          enemyBlocks.push(new block(30, 30, 100, 0, "#E2E2E2"));
+        }
+
+        // set attributes
+        set_enemyblock_attr(enemyBlocks);
+
+        frameCount = 0;
+        // call func periodically
+        gameInterval = setInterval(updateGame, framemillisec);
+        gameStatus = true;
+      }
+    }
+
+    function stopGame() {
+      clearInterval(gameInterval);
+      gameStatus = false;
+      context1.textAlign = "center";
+      context1.fillText("Game Over", canvas1.width / 2, 130);
+    }
+
+    function block(width, height, posx, posy, color) {
+      this.width = width;
+      this.height = height;
+      this.posx = posx;
+      this.posy = posy;
+      this.color = color;
+    }
+
+    function drawBlock(block) {
+      context1.fillStyle = block.color;
+      context1.fillRect(block.posx, block.posy, block.width, block.height);
+    }
+    function drawEnemyBlock(block) {
+      context1.fillStyle = block.color;
+      context1.fillRect(block.posx, block.posy, block.width, block.height);
+      context1.strokeRect(block.posx, block.posy, block.width, block.height);
+    }
+
+    function clearCanvas() {
+      context1.clearRect(0, 0, canvas1.width, canvas1.height);
+    }
+
+
+    function updateGame() {
+
+      // object position
+      for (let ii = 0; ii < maxNumOfEne; ii++) {
+        enemyBlocks[ii].posx = enemyBlocks[ii].posx + enemyBlocks[ii].vx / 1000 * framemillisec;
+        enemyBlocks[ii].posy = enemyBlocks[ii].posy + enemyBlocks[ii].vy / 1000 * framemillisec;
+
+      }
+
+      // hantei
+      var hitflag = false;
+      for(let ii = 0; ii< maxNumOfBox; ii++){
+        hitflag = ishit(draggableBlocks[ii], enemyBlocks[0]);
+        if (hitflag && draggableBlocks[ii].color === enemyBlocks[0].color) {
+          // enemyblock を再設定
+          set_enemyblock_attr(enemyBlocks);
+          score++;
+          break;
+        }else{
+          hitflag = false;
+        }
+      }
+
+
+      frameCount += 1;
+
+      clearCanvas();
+      
+      // 落ちてくる敵の描画
+      for (let ii = 0; ii < maxNumOfEne; ii++) {
+        drawEnemyBlock(enemyBlocks[ii]);
+      }
+      // 一番下の領域
+      context1.fillStyle = "#e2e2e2"; // bgColorより少し濃く
+      context1.fillRect(0, height1-30, width1, height1);
+      // box blockの描画
+      for (let ii = 0; ii < maxNumOfBox; ii++) {
+        drawBlock(draggableBlocks[ii]);
+      }
+      
+      drawScore();
+
+      if (is_out(enemyBlocks)) {
+        stopGame();
+      }
+    }
+
+    function is_out(blocks) {
+      // check whether block is out of the screen
+      for (let ii = 0; ii < maxNumOfEne; ii++) {
+        tmpx = blocks[ii].posx;
+        tmpy = blocks[ii].posy;
+        if (tmpx + blocks[ii].width < 0) {
+          return true
+        }
+        if (tmpx > width1) {
+          return true
+        }
+        if (tmpy + blocks[ii].height < 0) {
+          return true
+        }
+        if (tmpy > height1) {
+          return true
+        }
+      }
+      return false;
+    }
+
+
+    function drawScore() {
+      context1.fillStyle = "#000000";
+      context1.font = "30px Arial";
+      context1.textAlign = "right"
+      context1.fillText(score, canvas1.width * 0.9, 30);
+    }
+
+    init();
+  </script>
+
+</body>
+
+</html>
