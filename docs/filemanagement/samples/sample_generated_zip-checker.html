@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ZIPファイル構成チェックツール</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        #drop-zone { height: 200px; border: 3px dashed #007bff; display: flex; align-items: center; justify-content: center; margin: 20px 0; background: #f0f7ff; }
+        .result { white-space: pre-wrap; padding: 15px; background: #f4f4f4; border-radius: 5px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h2>ZIPファイル構成チェックツール</h2>
+    <div id="drop-zone">チェックしたいZIPファイルをドロップ</div>
+    <div id="status"></div>
+    <div id="result" class="result"></div>
+    <script>
+        const EXPECTED_STRUCTURE = ["自分フォルダー/","自分フォルダー/プログラミング基礎/","自分フォルダー/プログラミング基礎/pg課題.txt","自分フォルダー/プログラミング基礎/pg課題_温度計算.txt","自分フォルダー/英語1/","自分フォルダー/英語1/英語1_単語リスト1.txt","自分フォルダー/英語1/英語1_英作文_私の好きな場所.docx","自分フォルダー/西洋哲学/","自分フォルダー/西洋哲学/西洋哲学_授業資料_自由意志論.pdf","自分フォルダー/西洋哲学/西洋哲学_期末レポート.docx","自分フォルダー/西洋哲学/西洋哲学_期末レポート_提出用.pdf"];
+        document.getElementById('drop-zone').addEventListener('dragover', (e) => e.preventDefault());
+        document.getElementById('drop-zone').addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const jszip = new JSZip();
+            const zipContent = await jszip.loadAsync(file);
+            const actualPaths = Object.keys(zipContent.files);
+            let report = "【判定詳細】\n";
+            //想定
+            let isAllFound = true;
+            EXPECTED_STRUCTURE.forEach(path => {
+                const found = actualPaths.includes(path);
+                report += (found ? "✅ OK: " : "❌ NG: ") + path + "\n";
+                if (!found) isAllFound = false;
+            });
+            //余分なものがあるかどうか
+            let isMinimal = true;
+            actualPaths.forEach(path => {
+                const found = EXPECTED_STRUCTURE.includes(path);
+                if(!found){
+                   report += "📢 Unknown: " + path + "\n";
+                   isMinimal = false;
+                }
+            });
+            document.getElementById('result').innerText = report;
+            document.getElementById('status').innerHTML = (isAllFound && isMinimal) ? "合格！" : "不備あり";
+        });
+    </script>
+</body>
+</html>

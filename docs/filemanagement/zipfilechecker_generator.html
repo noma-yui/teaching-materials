@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ZIPファイル構成チェックツール・ジェネレーター</title>
+    <script id="jszip-script" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        #drop-zone {
+            width: 100%;
+            height: 150px;
+            border: 3px dashed #aaa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f9f9f9;
+            cursor: pointer;
+        }
+
+        #drop-zone.dragover {
+            border-color: #666;
+            background: #eee;
+        }
+
+        .config-view {
+            background: #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>ZIPファイル構成チェックツールを生成するジェネレーターです。</h1>
+    <p><strong>このページは、学校の先生むけのページです。</strong>ゲームがあると思っていた人、ごめんなさい。</p>
+    <p></p>
+    <p><div>このページは、「ZIPファイルをドラッグアンドドロップすると、ファイル・ディレクトリ構成が想定したものかどうかを、
+        チェックをするHTMLファイル」を生成するものです。</div>
+    </p>
+    <p><div>端的に言うと、<strong>「学生にファイル名の変更やディレクトリ（フォルダー）の構成などを身につけてほしい教員」</strong>が、
+        事前に用意したファイル・ディレクトリたちを、ファイル名を変えたりディレクトリー名を変えたりして、それが教員が想定したものかどうかをチェックしたい、
+        と教員が考えたとします。<strong>その「想定したものかどうかをチェックする」もの</strong>を、このページで作成できます。
+    </div></p>
+    <p><div>このページに「想定したもの」（以下、正解と呼称）」となるZIPをドラッグアンドドロップすると、上記の「チェックするHTML」を作成します。</div></p>
+    <p><div>各教員が希望するファイル・ディレクトリ構成のチェックツールを作成できます。</div></p>
+    <p>サンプルとして、<a href="./samples/sample_seikai.zip">「サンプルのZIPファイル」</a>と<a href="./samples/sample_generated_zip-checker.html">「サンプルのチェックHTML」</a>、および<a href="./samples/sample_sousamae.zip">「操作前の不正解のZIPファイル」</a>を置いておきます。</p>
+    <p><div>なお、ライブラリーはJSZipを使用していますが、処理はすべてWebブラウザーの中で完結し、Webブラウザー外にファイルやファイルの中身の情報は送信しません。</div>
+    <div>また、このページのほとんどは生成AI（Google Gemini）を用いて作成しています。</div></p>
+    <div class="step">
+        <h3>1. 「正解」のZIPを読み込む</h3>
+        <div id="drop-zone">ここに「正解」のZIPファイルをドロップ</div>
+    </div>
+
+    <div class="step" id="step2" style="display:none;">
+        <h3>2. 抽出された構成を確認</h3>
+        <div id="structure-list" class="config-view"></div>
+        <br>
+        <button id="download-btn">チェックツール(HTML)をダウンロード</button>
+    </div>
+
+    <script>
+        // ここが「正解」のファイル・ディレクトリ構成になる
+        let extractedStructure = [];
+
+        // ヘッダーにあるscriptタグからURLを動的に取得する
+        const jszipUrl = document.getElementById('jszip-script').src;
+
+        const dropZone = document.getElementById('drop-zone');
+        const step2 = document.getElementById('step2');
+        const structureList = document.getElementById('structure-list');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // ドラッグアンドドロップの挙動の制御
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (!file || file.type !== "application/zip" && !file.name.endsWith('.zip')) {
+                alert("ZIPファイルを選択してください");
+                return;
+            }else {
+                const jszip = new JSZip();
+                const zipContent = await jszip.loadAsync(file);
+                extractedStructure = Object.keys(zipContent.files);
+                structureList.innerText = JSON.stringify(extractedStructure, null, 4);
+                step2.style.display = 'block';
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const template = createTemplate(extractedStructure, jszipUrl);
+            const blob = new Blob([template], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "zip-checker.html";
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        function createTemplate(structure, libUrl) {
+            return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ZIPファイル構成チェックツール</title>
+    <script src="${libUrl}"><\/script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
+        #drop-zone { height: 200px; border: 3px dashed #007bff; display: flex; align-items: center; justify-content: center; margin: 20px 0; background: #f0f7ff; }
+        .result { white-space: pre-wrap; padding: 15px; background: #f4f4f4; border-radius: 5px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h2>ZIPファイル構成チェックツール</h2>
+    <div id="drop-zone">チェックしたいZIPファイルをドロップ</div>
+    <div id="status"></div>
+    <div id="result" class="result"></div>
+    <script>
+        const EXPECTED_STRUCTURE = ${JSON.stringify(structure)};
+        document.getElementById('drop-zone').addEventListener('dragover', (e) => e.preventDefault());
+        document.getElementById('drop-zone').addEventListener('drop', async (e) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files[0];
+            if (!file) return;
+            const jszip = new JSZip();
+            const zipContent = await jszip.loadAsync(file);
+            const actualPaths = Object.keys(zipContent.files);
+            let report = "【判定詳細】\\n";
+            //想定
+            let isAllFound = true;
+            EXPECTED_STRUCTURE.forEach(path => {
+                const found = actualPaths.includes(path);
+                report += (found ? "✅ OK: " : "❌ NG: ") + path + "\\n";
+                if (!found) isAllFound = false;
+            });
+            //余分なものがあるかどうか
+            let isMinimal = true;
+            actualPaths.forEach(path => {
+                const found = EXPECTED_STRUCTURE.includes(path);
+                if(!found){
+                   report += "📢 Unknown: " + path + "\\n";
+                   isMinimal = false;
+                }
+            });
+            document.getElementById('result').innerText = report;
+            document.getElementById('status').innerHTML = (isAllFound && isMinimal) ? "合格！" : "不備あり";
+        });
+    <\/script>
+</body>
+</html>`;
+        }
+    </script>
+</body>
+
+</html>
