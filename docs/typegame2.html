@@ -1,0 +1,360 @@
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Type Game 2</title>
+  <style>
+    div.center-text {
+      text-align: center;
+    }
+
+    div.center-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="center-text">
+    <div>タイプゲーム2</div>
+  </div>
+  <div class="center-text">
+    <div>Place your index fingers on F and J, and press the keys that appear on the screen. </div>
+    <div>As your score increases, more letters will appear.</div>
+  </div>
+  <div class="center-text">
+    <div>FとJに人差し指を置いて、画面に現れる文字のキーを押してください。 </div>
+    <div>スコアが増えると出てくる文字が増えます。 </div>
+  </div>
+  <div class="center-text">
+    <div>Click the following rectangle to start the game. </div>
+  </div>
+  <div class="center-text">
+    <div>下の四角形をクリックするとゲームが始まります。 </div>
+  </div>
+
+
+  <div class="center-box">
+    <canvas id="myCanvas1" width="200" height="100"
+      style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
+  </div>
+  <script>
+    var width1 = 300;
+    var height1 = 300;
+    var canvasId = "myCanvas1";
+    const canvas1 = document.getElementById(canvasId);
+    const context1 = canvas1.getContext("2d");
+    var framemillisec = 20;
+    var frameCount = 0;
+    var myBlock;
+    var myBlock2;
+    var enemyBlocks = [];
+    var numOfEne = 1;
+    // var maxV = 50;
+    var maxVx = width1 / 2;
+    var maxVy = height1 / 2;
+    var mousex;
+    var mousey;
+    var gameInterval;
+    var gameStatus = false;
+    var keydown = {}
+    var taisyoukeys = ['F','J'];
+    var allTaisyoukeys = [
+      'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+      'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+      'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+    ]
+
+    var score;
+
+
+    function init() {
+      canvas1.width = width1;
+      canvas1.height = height1;
+      canvas1.addEventListener('click', startGame, false);
+      // キー押下フラグ初期化
+      for (let tmpkey of allTaisyoukeys) {
+        keydown[tmpkey] = false;
+      }
+      // キー判定処理登録
+      window.addEventListener('keydown', function (event) {
+        calckeydown(event.key);
+      });
+
+      // スコア
+      score = 0;
+    }
+
+
+    function calckeydown(key) {
+      //大文字化
+      key = key.toUpperCase();
+      if (taisyoukeys.includes(key)) {
+        console.log(key + 'キーが押されました');
+        // キーが押されたときの処理を記述
+        keydown[key] = true;
+      } else {
+        //pass;
+      }
+    }
+
+    function key2pos(letter) {
+      switch (letter) {
+        case 'Q':
+        case 'A':
+        case 'Z':
+          return 1 - 1;
+        case 'W':
+        case 'S':
+        case 'X':
+          return 2 - 1;
+        case 'E':
+        case 'D':
+        case 'C':
+          return 3 - 1;
+        case 'R':
+        case 'F':
+        case 'V':
+          return 4 - 1;
+        case 'T':
+        case 'G':
+        case 'B':
+          return 5 - 1;
+        case 'Y':
+        case 'H':
+        case 'N':
+          return 6 - 1;
+        case 'U':
+        case 'J':
+          return 7 - 1;
+        case 'I':
+        case 'K':
+        case 'M':
+          return 8 - 1;
+        case 'O':
+        case 'L':
+          return 9 - 1;
+        case 'P':
+        case '+':
+          return 10 - 1;
+      }
+    }
+
+    function randint(max) {
+      // 0 から max-1
+      // maxの値は戻らない
+      return Math.floor(Math.random() * max)
+    }
+
+    function get_randletter() {
+      // ランダムに対象文字を得る
+      return taisyoukeys[randint(taisyoukeys.length)]
+    }
+
+    function countup_score(upval = 1) {
+      score += upval;
+    }
+
+    function updateTaisyoukeys(){
+      if(score < 5){
+        taisyoukeys = ['F','J'];
+      }else if(5 <= score && score < 10){
+        taisyoukeys = ['D', 'F', 'J', 'K'];
+      }else if(10 <= score && score < 20){
+        taisyoukeys = ['S', 'D', 'F', 'J', 'K', 'L'];
+      }else if(20 <= score && score < 30){
+        taisyoukeys = ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'];
+      }else if(30 <= score && score < 50){
+        taisyoukeys = [
+          'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+          'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'
+        ];
+      }else if(50 <= score && score < 100){
+        taisyoukeys = [
+          'Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P',
+          'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L',
+          'Z', 'X', 'C', 'V', 'B', 'N', 'M'
+        ];
+      }
+
+    }
+
+    function keyhantei() {
+      // 押されたキーの情報を得る。
+      // 二個以上押された場合は知らん。一個だけ取り出す。
+      for (tmpkey in keydown) {
+        if (keydown[tmpkey]) {
+          break;
+        }
+      }
+
+      if (keydown[tmpkey] && enemyBlocks[0].letter === tmpkey) {
+        // キーが押されていて、それが文字と一緒のとき
+        for (let ii = 0; ii < numOfEne; ii++) {
+          // set attributes
+          set_enemyblock_attr(enemyBlocks[ii]);
+        }
+        // スコアを上げる
+        countup_score(1);
+        //対象キーを更新する
+        updateTaisyoukeys();
+      } else if (keydown[tmpkey] && enemyBlocks[0].letter !== tmpkey) {
+        // キーが押されていて、それが文字と一緒でない
+        // スコアを下げる
+        countup_score(-1);
+        //対象キーを更新する
+        updateTaisyoukeys();
+      }
+      // clear key down event
+      clear_allkeydown()
+
+    }
+
+    function clear_allkeydown() {
+      // キーが押されているフラグを
+      for (let tmpkey in keydown) {
+        keydown[tmpkey] = false;
+      }
+    }
+
+    function set_enemyblock_attr(block) {
+      // 文字
+      block.letter = get_randletter();
+
+      block.posy = 0;
+      block.vy = maxVy;
+
+      let targetx = width1 / 12 * (key2pos(block.letter) + 1);
+      let initialx = (width1 - block.width) / 2; //真ん中
+      block.posx = initialx;
+      block.vx = (targetx - initialx) / height1 * block.vy;
+    }
+
+    function startGame() {
+      if (gameStatus === false) {
+        // start game
+        clearCanvas();
+
+        enemyBlocks = [];
+
+        for (let ii = 0; ii < numOfEne; ii++) {
+          enemyBlocks.push(new block(30, 30, 100, 0, "#E2E2E2"));
+
+          // set attributes
+          set_enemyblock_attr(enemyBlocks[ii]);
+
+        }
+
+        taisyoukeys = ['F','J'];
+        // キー押下フラグ初期化
+        for (let tmpkey of allTaisyoukeys) {
+          keydown[tmpkey] = false;
+        }
+        frameCount = 0;
+        score = 0;
+        // call func periodically
+        gameInterval = setInterval(updateGame, framemillisec);
+        gameStatus = true;
+      }
+    }
+
+    function stopGame() {
+      clearInterval(gameInterval);
+      gameStatus = false;
+      context1.textAlign = "center"
+      context1.fillText("Game Over", canvas1.width / 2, 130);
+    }
+
+    function block(width, height, posx, posy, color) {
+      this.width = width;
+      this.height = height;
+      this.posx = posx;
+      this.posy = posy;
+      this.color = color;
+    }
+
+
+    function drawEnemyBlock(block) {
+      context1.fillStyle = block.color;
+      context1.fillRect(block.posx, block.posy, block.width, block.height);
+      context1.strokeRect(block.posx, block.posy, block.width, block.height);
+      context1.fillStyle = "#000000";
+      context1.font = "30px Arial";
+      context1.textAlign = "center"
+      context1.fillText(block.letter, block.posx + block.width / 2, block.posy + block.height * 0.9);
+
+    }
+
+    function clearCanvas() {
+      context1.clearRect(0, 0, canvas1.width, canvas1.height);
+    }
+
+
+    function updateGame() {
+
+      // object position
+      for (let ii = 0; ii < numOfEne; ii++) {
+        enemyBlocks[ii].posx = enemyBlocks[ii].posx + enemyBlocks[ii].vx / 1000 * framemillisec;
+        enemyBlocks[ii].posy = enemyBlocks[ii].posy + enemyBlocks[ii].vy / 1000 * framemillisec;
+
+        flagout = is_out(enemyBlocks[ii]); // ココ危ない
+
+      }
+
+
+      // key hanei
+      keyhantei();
+
+      frameCount += 1;
+
+      clearCanvas();
+      // drawBlock(myBlock);
+      for (let ii = 0; ii < numOfEne; ii++) {
+        drawEnemyBlock(enemyBlocks[ii]);
+      }
+      drawScore();
+
+      if (flagout) {
+        stopGame();
+      }
+    }
+
+    function is_out(block) {
+      // check whether block is out of the screen
+      tmpx = block.posx;
+      tmpy = block.posy;
+
+      if (tmpx + block.width < 0) {
+        return true
+      }
+      if (tmpx > width1) {
+        return true
+      }
+
+      if (tmpy + block.height < 0) {
+        return true
+      }
+      if (tmpy > height1) {
+        return true
+      }
+
+      return false;
+    }
+
+
+    function drawScore() {
+      context1.fillStyle = "#000000";
+      context1.font = "30px Arial";
+      context1.textAlign = "right"
+      context1.fillText(score, canvas1.width * 0.9, 30);
+    }
+
+    init();
+  </script>
+
+</body>
+
+</html>
