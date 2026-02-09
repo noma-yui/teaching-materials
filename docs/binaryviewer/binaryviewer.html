@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Hex Viewer</title>
+    <style>
+        body {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+            background-color: #f0f0f0;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        h1 {
+            font-size: 1.4rem;
+            margin: 20px 0 10px;
+            color: #444;
+        }
+
+        #drop-zone {
+            width: 90%;
+            height: 80px;
+            border: 2px dashed #bbb;
+            background-color: #fefefe;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #drop-zone.dragover {
+            border-color: #0078d4;
+            background-color: #e1f0fe;
+        }
+
+        #viewer {
+            width: 95%;
+            flex-grow: 1;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre;
+            font-size: 13px;
+            line-height: 1.5;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .hex-row {
+            display: flex;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .offset {
+            color: #888;
+            margin-right: 15px;
+            font-weight: bold;
+            user-select: none;
+            min-width: 80px;
+        }
+
+        .hex-part {
+            color: #2b57ff;
+            margin-right: 25px;
+            background-color: #fafafa;
+            padding: 0 5px;
+            min-width: 380px;
+        }
+
+        .ascii-part {
+            color: #e43e1c;
+            padding: 0 5px;
+            border-left: 1px solid #eee;
+            flex-grow: 1;
+        }
+
+        .hex-row:hover {
+            background-color: #f0f7ff;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Hex Viewer</h1>
+    <div> ファイルの中身を16進数で表示します。AI-assisted by Gemini.</div>
+    <div id="drop-zone">ファイルをここにドロップしてください</div>
+    <div id="viewer">ここにバイナリデータが表示されます</div>
+
+    <script>
+        const dropZone = document.getElementById('drop-zone');
+        const viewer = document.getElementById('viewer');
+
+        // HTMLエスケープ関数
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) readFile(file);
+        });
+
+        function readFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => displayHex(new Uint8Array(e.target.result));
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayHex(data) {
+            let output = "";
+            const rowSize = 16;
+
+            for (let i = 0; i < data.length; i += rowSize) {
+                let offset = i.toString(16).padStart(8, '0').toUpperCase();
+                let hexRow = "";
+                let rawAscii = "";
+
+                for (let j = 0; j < rowSize; j++) {
+                    if (i + j < data.length) {
+                        const byte = data[i + j];
+                        hexRow += byte.toString(16).padStart(2, '0').toUpperCase() + " ";
+                        // 制御文字以外を一時的に文字列として結合
+                        rawAscii += (byte >= 32 && byte <= 126) ? String.fromCharCode(byte) : ".";
+                    } else {
+                        hexRow += "   ";
+                    }
+                }
+
+                // ASCIIパートをまとめてエスケープ処理
+                const safeAscii = escapeHtml(rawAscii);
+
+                output += `<div class="hex-row">` +
+                    `<span class="offset">${offset}</span>` +
+                    `<span class="hex-part">${hexRow}</span>` +
+                    `<span class="ascii-part">${safeAscii}</span>` +
+                    `</div>`;
+
+                if (i > 100000) { // 約100KBで制限
+                    output += `<div style="color:red; padding:10px;">...パフォーマンス維持のため、以降の表示を制限しました...</div>`;
+                    break;
+                }
+            }
+            viewer.innerHTML = output;
+        }
+    </script>
+</body>
+
+</html>
