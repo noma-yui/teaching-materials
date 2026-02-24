@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTML image URL</title>
+  <style>
+    div {
+      margin-bottom: 20px;
+      /* 下側に20pxの隙間を作る */
+    }
+
+    span.textbold {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>画像表示とURL</h1>
+  <div>画像のURLを変更することで、画像とURLの関係を体感します。（画像はAIで生成。）</div>
+
+  <div>
+    <img id="my-image1" src="aigenerated_cat.jpg" alt="AI Generated Image">
+  </div>
+
+  <div>以下、操作説明</div>
+
+  <div><span class="textbold">ステップ１：</span>右上の三点リーダー（のようなアイコン）→「その他のツール」→「ディベロッパー ツール」もしくは「開発者ツール」</div>
+
+  <div><span class="textbold">ステップ２：</span>画面右側の、Edgeなら「＜／＞」のマークのタブ、
+    Chromeなら「Elements」タブをクリック</div>
+
+  <div><span class="textbold">ステップ３：</span>「div」タグを開いていって「img」タグを探す。
+    「aigenerated_cat.jpg」をダブルクリック。</div>
+
+  <div><span class="textbold">ステップ４：</span>次のように変更する。
+    「aigenerated_cat.jpg」→「aigenerated_dog.jpg」</div>
+
+  <div><span class="textbold">解説１：</span>「aigenerated_cat.jpg」という部分はURLの相対URLと呼ばれる書き方です。
+    いま表示している静的なWebサイトでは画像ファイルのファイル名と同じになります。</div>
+
+  <div><span class="textbold">解説２：</span>「aigenerated_cat.jpg」というファイル名の画像を指定している箇所を、
+    「aigenerated_dog.jpg」というファイル名の画像に変更しました。
+    そのため、表示される画像が変更されました。</div>
+
+  <div><span class="textbold">解説３：</span>「aigenerated_dog.jpg」を「aigenerated_cow.jpg」としてみよう。
+    変なアイコンが表示されたね。これは「画像ファイルが無い」ことを示すアイコンです。
+    ファイルの名前を「cow（牛）」としても牛は表示されません。
+    「aigenerated_cat.jpg」と「aigenerated_dog.jpg」は事前にファイルとして存在しているので表示できます。
+  </div>
+
+</body>
+
+</html>
