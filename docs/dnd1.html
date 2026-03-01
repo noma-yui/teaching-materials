@@ -182,7 +182,8 @@
     function checkDraggableBlock(mousex, mousey) {
       // flag と id を返す
       // 相対ポジションも返す
-      for(let ii=0; ii < draggableBlocks.length; ii++){
+      // 画面手前にあるブロックを優先して判定する
+      for(let ii=draggableBlocks.length-1; ii >= 0; ii--){
         if(checkDragArea(mousex, mousey, draggableBlocks[ii])){
           retid = draggableBlocks[ii].id;
           return [true, retid, (mousex-draggableBlocks[ii].posx), (mousey-draggableBlocks[ii].posy)];
