@@ -2,49 +2,80 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ZIPファイル構成チェックツール</title>
+    <title>ZIP構成バリデータ</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: auto; }
-        #drop-zone { height: 200px; border: 3px dashed #007bff; display: flex; align-items: center; justify-content: center; margin: 20px 0; background: #f0f7ff; }
-        .result { white-space: pre-wrap; padding: 15px; background: #f4f4f4; border-radius: 5px; border: 1px solid #ccc; }
+        body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; background: #f8f9fa; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .file-upload-wrapper { border: 3px dashed #dee2e6; padding: 40px; text-align: center; cursor: pointer; border-radius: 8px; margin: 20px 0; }
+        .file-upload-wrapper:focus-within { border-color: #007bff; background: #f0f7ff; outline: 2px solid #007bff; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        .upload-button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; border-radius: 4px; margin-top: 10px; }
+        .file-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; font-family: monospace; list-style: none; }
+        .status-missing { background: #fff5f5; color: #c92a2a; }
+        .status-unknown { background: #fff9db; color: #e67700; }
+        .status-ok { background: #ebfbee; color: #2b8a3e; }
+        .success-box { display: none; background: #d3f9d8; color: #2b8a3e; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center; }
     </style>
 </head>
 <body>
-    <h2>ZIPファイル構成チェックツール</h2>
-    <div id="drop-zone">チェックしたいZIPファイルをドロップ</div>
-    <div id="status"></div>
-    <div id="result" class="result"></div>
+    <main class="card">
+        <h1>ZIP構成チェック</h1>
+        <p>課題のZIPファイルをアップロードして、構成が正しいか確認してください。</p>
+        
+        <div class="file-upload-wrapper">
+            <label for="check-input">
+                <span>ここにZIPをドロップ、または</span><br>
+                <span class="upload-button" role="button">ファイルを選択</span>
+                <input type="file" id="check-input" class="visually-hidden" accept=".zip">
+            </label>
+        </div>
+
+        <section id="report-section" style="display:none;">
+            <h2 id="result-status">判定中...</h2>
+            <ul id="file-report" style="padding:0;"></ul>
+            <div id="success-area" class="success-box">
+                <strong>✨ チェック合格 ✨</strong><br>
+                <p>合格です！すべてのファイルが確認できました。</p>
+            </div>
+        </section>
+    </main>
+
     <script>
-        const EXPECTED_STRUCTURE = ["自分フォルダー/","自分フォルダー/プログラミング基礎/","自分フォルダー/プログラミング基礎/pg課題.txt","自分フォルダー/プログラミング基礎/pg課題_温度計算.txt","自分フォルダー/英語1/","自分フォルダー/英語1/英語1_単語リスト1.txt","自分フォルダー/英語1/英語1_英作文_私の好きな場所.docx","自分フォルダー/西洋哲学/","自分フォルダー/西洋哲学/西洋哲学_授業資料_自由意志論.pdf","自分フォルダー/西洋哲学/西洋哲学_期末レポート.docx","自分フォルダー/西洋哲学/西洋哲学_期末レポート_提出用.pdf"];
-        document.getElementById('drop-zone').addEventListener('dragover', (e) => e.preventDefault());
-        document.getElementById('drop-zone').addEventListener('drop', async (e) => {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
+        const EXPECTED = ["自分フォルダー/","自分フォルダー/プログラミング基礎/","自分フォルダー/プログラミング基礎/pg課題.txt","自分フォルダー/プログラミング基礎/pg課題_温度計算.txt","自分フォルダー/英語1/","自分フォルダー/英語1/英語1_単語リスト1.txt","自分フォルダー/英語1/英語1_英作文_私の好きな場所.docx","自分フォルダー/西洋哲学/","自分フォルダー/西洋哲学/西洋哲学_授業資料_自由意志論.pdf","自分フォルダー/西洋哲学/西洋哲学_期末レポート.docx","自分フォルダー/西洋哲学/西洋哲学_期末レポート_提出用.pdf"];
+        const checkInput = document.getElementById('check-input');
+
+        async function validate(file) {
             if (!file) return;
             const jszip = new JSZip();
-            const zipContent = await jszip.loadAsync(file);
-            const actualPaths = Object.keys(zipContent.files);
-            let report = "【判定詳細】\n";
-            //想定
-            let isAllFound = true;
-            EXPECTED_STRUCTURE.forEach(path => {
-                const found = actualPaths.includes(path);
-                report += (found ? "✅ OK: " : "❌ NG: ") + path + "\n";
-                if (!found) isAllFound = false;
-            });
-            //余分なものがあるかどうか
-            let isMinimal = true;
-            actualPaths.forEach(path => {
-                const found = EXPECTED_STRUCTURE.includes(path);
-                if(!found){
-                   report += "📢 Unknown: " + path + "\n";
-                   isMinimal = false;
-                }
-            });
-            document.getElementById('result').innerText = report;
-            document.getElementById('status').innerHTML = (isAllFound && isMinimal) ? "合格！" : "不備あり";
-        });
+            const zip = await jszip.loadAsync(file);
+            const actualPaths = Object.keys(zip.files);
+            
+            const reportList = document.getElementById('file-report');
+            const successArea = document.getElementById('success-area');
+            reportList.innerHTML = "";
+            document.getElementById('report-section').style.display = 'block';
+
+            const missing = EXPECTED.filter(p => !actualPaths.includes(p));
+            const unknown = actualPaths.filter(p => !EXPECTED.includes(p));
+            const correct = EXPECTED.filter(p => actualPaths.includes(p));
+
+            missing.forEach(p => reportList.innerHTML += `<li class="file-item status-missing">❌ 不足: ${p}</li>`);
+            unknown.forEach(p => reportList.innerHTML += `<li class="file-item status-unknown">⚠️ 未知: ${p}</li>`);
+            correct.forEach(p => reportList.innerHTML += `<li class="file-item status-ok">✅ 一致: ${p}</li>`);
+
+            if (missing.length === 0) {
+                document.getElementById('result-status').innerText = "【適合】";
+                successArea.style.display = 'block';
+            } else {
+                document.getElementById('result-status').innerText = "【不備あり】";
+                successArea.style.display = 'none';
+            }
+        }
+
+        checkInput.addEventListener('change', (e) => validate(e.target.files[0]));
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => { e.preventDefault(); validate(e.dataTransfer.files[0]); });
     </script>
 </body>
 </html>

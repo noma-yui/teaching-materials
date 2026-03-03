@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>ZIP構成チェックツール・ジェネレーター</title>
+    <script id="jszip-script" src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f4f7f6;
+        }
+
+        .step {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+        }
+
+        /* ファイル選択エリアのスタイル */
+        .file-upload-wrapper {
+            width: 100%;
+            border: 2px dashed #aaa;
+            background: #fafafa;
+            padding: 40px 20px;
+            text-align: center;
+            border-radius: 8px;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .file-upload-wrapper:focus-within {
+            border-color: #007bff;
+            background: #eef6ff;
+            outline: 2px solid #007bff;
+        }
+
+        .file-upload-wrapper.dragover {
+            border-color: #007bff;
+            background: #eef6ff;
+        }
+
+        /* 実際のinputは隠すが、フォーカスは当たるようにする */
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            border: 0;
+        }
+
+        .upload-button {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #6c757d;
+            color: white;
+            border-radius: 4px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        .config-view {
+            background: #333;
+            color: #fff;
+            padding: 12px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button#download-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button#download-btn:disabled {
+            background: #ccc;
+        }
+    </style>
+</head>
+
+<body>
+
+
+    <h1>ZIPファイル構成チェックツールを生成するジェネレーターです。</h1>
+    <p><strong>このページは、学校の先生むけのページです。</strong>ゲームがあると思っていた人、ごめんなさい。</p>
+    <p></p>
+    <p>
+    <div>このページは、「ZIPファイルをドラッグアンドドロップすると、ファイル・ディレクトリ構成が想定したものかどうかを、
+        チェックをするHTMLファイル」を生成するものです。</div>
+    </p>
+    <p>
+    <div>端的に言うと、<strong>「学生にファイル名の変更やディレクトリ（フォルダー）の構成などを身につけてほしい教員」</strong>が、
+        事前に用意したファイル・ディレクトリたちを、ファイル名を変えたりディレクトリー名を変えたりして、それが教員が想定したものかどうかをチェックしたい、
+        と教員が考えたとします。<strong>その「想定したものかどうかをチェックする」もの</strong>を、このページで作成できます。
+    </div>
+    </p>
+    <p>
+    <div>このページに「想定したもの」（以下、正解と呼称）」となるZIPをドラッグアンドドロップすると、上記の「チェックするHTML」を作成します。</div>
+    </p>
+    <p>
+    <div>各教員が希望するファイル・ディレクトリ構成のチェックツールを作成できます。</div>
+    </p>
+    <p>サンプルとして、<a href="./samples/sample_seikai.zip">「サンプルのZIPファイル」</a>と<a
+            href="./samples/sample_generated_zip-checker.html">「サンプルのチェックHTML」</a>、および<a
+            href="./samples/sample_sousamae.zip">「操作前の不正解のZIPファイル」</a>を置いておきます。</p>
+    <p>
+    <div>なお、ライブラリーはJSZipを使用していますが、処理はすべてWebブラウザーの中で完結し、Webブラウザー外にファイルやファイルの中身の情報は送信しません。</div>
+    <div>また、このページのほとんどは生成AI（Google Gemini）を用いて作成しています。</div>
+    </p>
+    <section class="step">
+        <h3>1. 正解のZIPを登録</h3>
+        <p>正解となる構成のZIPファイルをアップロードしてください（ドラッグ＆ドロップまたはボタン選択）。</p>
+
+        <div id="drop-zone" class="file-upload-wrapper">
+            <label for="zip-input">
+                <span id="file-label-text">ここにZIPファイルをドロップするか、下のボタンを押してください</span><br>
+                <span class="upload-button" role="button">ファイルを選択</span>
+                <input type="file" id="zip-input" class="visually-hidden" accept=".zip">
+            </label>
+        </div>
+
+        <div id="structure-preview" style="display:none; margin-top:20px;">
+            <p><strong>抽出された構成:</strong></p>
+            <div id="structure-list" class="config-view"></div>
+        </div>
+    </section>
+
+    <section class="step">
+        <h3>2. 合格時に表示するメッセージ</h3>
+        <input type="text" id="success-msg-input" aria-label="合格時のメッセージ" value="合格です！すべてのファイルが確認できました。">
+    </section>
+
+    <div class="step">
+        <button id="download-btn" disabled>チェックツール(HTML)を書き出す</button>
+    </div>
+
+    <script>
+        let extractedStructure = [];
+        const jszipUrl = document.getElementById('jszip-script').src;
+        const zipInput = document.getElementById('zip-input');
+        const dropZone = document.getElementById('drop-zone');
+        const downloadBtn = document.getElementById('download-btn');
+
+        // ファイル処理の共通関数
+        async function handleFile(file) {
+            if (!file) return;
+            try {
+                const jszip = new JSZip();
+                const zipContent = await jszip.loadAsync(file);
+                extractedStructure = Object.keys(zipContent.files);
+                document.getElementById('structure-list').innerText = extractedStructure.join('\n');
+                document.getElementById('structure-preview').style.display = 'block';
+                document.getElementById('file-label-text').innerText = "読み込み完了: " + file.name;
+                downloadBtn.disabled = false;
+            } catch (e) {
+                alert("ZIPの解析に失敗しました。");
+            }
+        }
+
+        // 入力変更（ボタン選択）
+        zipInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
+
+        // ドラッグ＆ドロップ
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => { dropZone.classList.remove('dragover'); });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            handleFile(e.dataTransfer.files[0]);
+        });
+
+        downloadBtn.addEventListener('click', () => {
+            const finalMsg = document.getElementById('success-msg-input').value;
+            const template = createTemplate(extractedStructure, jszipUrl, finalMsg);
+            const blob = new Blob([template], { type: 'text/html' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = "zip-validator.html";
+            a.click();
+        });
+
+        function createTemplate(structure, libUrl, successMsg) {
+            // （※ 下記のツール側HTMLも同様にボタン付きに修正します）
+            return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ZIP構成バリデータ</title>
+    <script src="${libUrl}"><\/script>
+    <style>
+        body { font-family: sans-serif; max-width: 700px; margin: 40px auto; padding: 20px; background: #f8f9fa; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .file-upload-wrapper { border: 3px dashed #dee2e6; padding: 40px; text-align: center; cursor: pointer; border-radius: 8px; margin: 20px 0; }
+        .file-upload-wrapper:focus-within { border-color: #007bff; background: #f0f7ff; outline: 2px solid #007bff; }
+        .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+        .upload-button { display: inline-block; padding: 10px 20px; background: #007bff; color: white; border-radius: 4px; margin-top: 10px; }
+        .file-item { padding: 8px 12px; margin-bottom: 4px; border-radius: 6px; font-family: monospace; list-style: none; }
+        .status-missing { background: #fff5f5; color: #c92a2a; }
+        .status-unknown { background: #fff9db; color: #e67700; }
+        .status-ok { background: #ebfbee; color: #2b8a3e; }
+        .success-box { display: none; background: #d3f9d8; color: #2b8a3e; padding: 20px; border-radius: 8px; margin-top: 20px; text-align: center; }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>ZIP構成チェック</h1>
+        <p>課題のZIPファイルをアップロードして、構成が正しいか確認してください。</p>
+        
+        <div class="file-upload-wrapper">
+            <label for="check-input">
+                <span>ここにZIPをドロップ、または</span><br>
+                <span class="upload-button" role="button">ファイルを選択</span>
+                <input type="file" id="check-input" class="visually-hidden" accept=".zip">
+            </label>
+        </div>
+
+        <section id="report-section" style="display:none;">
+            <h2 id="result-status">判定中...</h2>
+            <ul id="file-report" style="padding:0;"></ul>
+            <div id="success-area" class="success-box">
+                <strong>✨ チェック合格 ✨</strong><br>
+                <p>${successMsg}<\/p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const EXPECTED = ${JSON.stringify(structure)};
+        const checkInput = document.getElementById('check-input');
+
+        async function validate(file) {
+            if (!file) return;
+            const jszip = new JSZip();
+            const zip = await jszip.loadAsync(file);
+            const actualPaths = Object.keys(zip.files);
+            
+            const reportList = document.getElementById('file-report');
+            const successArea = document.getElementById('success-area');
+            reportList.innerHTML = "";
+            document.getElementById('report-section').style.display = 'block';
+
+            const missing = EXPECTED.filter(p => !actualPaths.includes(p));
+            const unknown = actualPaths.filter(p => !EXPECTED.includes(p));
+            const correct = EXPECTED.filter(p => actualPaths.includes(p));
+
+            missing.forEach(p => reportList.innerHTML += \`<li class="file-item status-missing">❌ 不足: \${p}</li>\`);
+            unknown.forEach(p => reportList.innerHTML += \`<li class="file-item status-unknown">⚠️ 未知: \${p}</li>\`);
+            correct.forEach(p => reportList.innerHTML += \`<li class="file-item status-ok">✅ 一致: \${p}</li>\`);
+
+            if (missing.length === 0) {
+                document.getElementById('result-status').innerText = "【適合】";
+                successArea.style.display = 'block';
+            } else {
+                document.getElementById('result-status').innerText = "【不備あり】";
+                successArea.style.display = 'none';
+            }
+        }
+
+        checkInput.addEventListener('change', (e) => validate(e.target.files[0]));
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('drop', (e) => { e.preventDefault(); validate(e.dataTransfer.files[0]); });
+    <\/script>
+</body>
+</html>`;
+        }
+    </script>
+</body>
+
+</html>
