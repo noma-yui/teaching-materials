@@ -23,7 +23,7 @@
   </div>
   <div class="center-text">
     <div>Drop the blocks that fall from above into boxes of the same color.
-       Drag and drop to move the boxes at the bottom of the screen.</div>
+      Drag and drop to move the boxes at the bottom of the screen.</div>
   </div>
   <div class="center-text">
     <div>上から落ちてくるブロックを同じ色の箱に入れてください。ドラッグアンドドロップで画面したの箱が動きます。</div>
@@ -65,7 +65,7 @@
     var mousey;
     var dragBoxLeft = 0;
     var dragBoxTop = 0;
-    var dragId ="";
+    var dragId = "";
     var gameInterval;
     var gameStatus = false;
     var isDragging = false;
@@ -90,19 +90,19 @@
         mousex = e.pageX - canvas1.offsetLeft;
         mousey = e.pageY - canvas1.offsetTop;
         [isDraggable, idname, dragBoxLeft, dragBoxTop] = checkDraggableBlock(mousex, mousey);
-        if(isDraggable){
+        if (isDraggable) {
           isDragging = true;
           dragId = idname;
           // 前に来るようにする
-          for(let ii = 0; ii< maxNumOfBox; ii++){
-            if(draggableBlocks[ii].id === dragId){
+          for (let ii = 0; ii < maxNumOfBox; ii++) {
+            if (draggableBlocks[ii].id === dragId) {
               // //debug
               // console.log(draggableBlocks[ii]);
 
               tmpBlock = draggableBlocks[ii];
               draggableBlocks.splice(ii, 1);
               draggableBlocks.push(tmpBlock);
-             
+
               break;
             }
           }
@@ -114,12 +114,12 @@
       }
       );
       window.addEventListener('mousemove', function (e) {
-        if(isDragging){
-          for(let ii =0; ii<draggableBlocks.length; ii++){
-            if(draggableBlocks[ii].id === dragId){
+        if (isDragging) {
+          for (let ii = 0; ii < draggableBlocks.length; ii++) {
+            if (draggableBlocks[ii].id === dragId) {
               mousex = e.pageX - canvas1.offsetLeft;
               mousey = e.pageY - canvas1.offsetTop;
-              draggableBlocks[ii].posx = mousex -dragBoxLeft;
+              draggableBlocks[ii].posx = mousex - dragBoxLeft;
               // 上下は動かさず
               // draggableBlocks[ii].posy = mousey -dragBoxTop;
             }
@@ -164,18 +164,18 @@
         blocks[ii].color = color_letter;
 
         blocks[ii].posy = 0;
-        blocks[ii].vy = maxVy;
+        blocks[ii].vy = maxVy * (1 + score / 30);
 
-        let initialx = randint(width1-blocks[ii].width); // 適当な位置
+        let initialx = randint(width1 - blocks[ii].width); // 適当な位置
         blocks[ii].posx = initialx;
         blocks[ii].vx = 0;
       }
     }
 
     function checkDragArea(mousex, mousey, block) {
-      if(block.posx <= mousex && mousex <= block.posx + block.width 
-        && block.posy <= mousey && mousey <= block.posy + block.height 
-        ){
+      if (block.posx <= mousex && mousex <= block.posx + block.width
+        && block.posy <= mousey && mousey <= block.posy + block.height
+      ) {
         return true;
       }
     }
@@ -183,10 +183,10 @@
       // flag と id を返す
       // 相対ポジションも返す
       // 画面手前にあるブロックを優先して判定する
-      for(let ii=draggableBlocks.length-1; ii >= 0; ii--){
-        if(checkDragArea(mousex, mousey, draggableBlocks[ii])){
+      for (let ii = draggableBlocks.length - 1; ii >= 0; ii--) {
+        if (checkDragArea(mousex, mousey, draggableBlocks[ii])) {
           retid = draggableBlocks[ii].id;
-          return [true, retid, (mousex-draggableBlocks[ii].posx), (mousey-draggableBlocks[ii].posy)];
+          return [true, retid, (mousex - draggableBlocks[ii].posx), (mousey - draggableBlocks[ii].posy)];
         }
       }
       return [false, "nashi", 0, 0];
@@ -215,18 +215,18 @@
         // set id
         draggableBlocks[0].id = "id0";
         draggableBlocks[1].id = "id1";
-        
+
         // 上から落ちてくるエネミー
         enemyBlocks = [];
         for (let ii = 0; ii < maxNumOfEne; ii++) {
           enemyBlocks.push(new block(30, 30, 100, 0, "#E2E2E2"));
         }
 
+        frameCount = 0;
+        score = 0;
         // set attributes
         set_enemyblock_attr(enemyBlocks);
 
-        frameCount = 0;
-        score = 0;
         // call func periodically
         gameInterval = setInterval(updateGame, framemillisec);
         gameStatus = true;
@@ -274,14 +274,14 @@
 
       // hantei
       var hitflag = false;
-      for(let ii = 0; ii< maxNumOfBox; ii++){
+      for (let ii = 0; ii < maxNumOfBox; ii++) {
         hitflag = ishit(draggableBlocks[ii], enemyBlocks[0]);
         if (hitflag && draggableBlocks[ii].color === enemyBlocks[0].color) {
           // enemyblock を再設定
           set_enemyblock_attr(enemyBlocks);
           score++;
           break;
-        }else{
+        } else {
           hitflag = false;
         }
       }
@@ -290,19 +290,19 @@
       frameCount += 1;
 
       clearCanvas();
-      
+
       // 落ちてくる敵の描画
       for (let ii = 0; ii < maxNumOfEne; ii++) {
         drawEnemyBlock(enemyBlocks[ii]);
       }
       // 一番下の領域
       context1.fillStyle = "#e2e2e2"; // bgColorより少し濃く
-      context1.fillRect(0, height1-30, width1, height1);
+      context1.fillRect(0, height1 - 30, width1, height1);
       // box blockの描画
       for (let ii = 0; ii < maxNumOfBox; ii++) {
         drawBlock(draggableBlocks[ii]);
       }
-      
+
       drawScore();
 
       if (is_out(enemyBlocks)) {
