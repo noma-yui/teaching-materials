@@ -2,7 +2,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>Type Game 2</title>
+  <title>Type Game 2 Speech</title>
   <style>
     div.center-text {
       text-align: center;
@@ -19,7 +19,7 @@
 <body>
 
   <div class="center-text">
-    <div>タイプゲーム2</div>
+    <div>タイプゲーム2 Speech版</div>
   </div>
   <div class="center-text">
     <div>Place your index fingers on F and J, and press the keys that appear on the screen. </div>
@@ -28,17 +28,19 @@
   <div class="center-text">
     <div>FとJに人差し指を置いて、画面に現れる文字のキーを押してください。 </div>
     <div>スコアが増えると出てくる文字の種類が増えます。 </div>
+    <div>Web Speech APIを使って出てくる文字を読み上げる。</div>
   </div>
   <div class="center-text">
     <div>Click the following rectangle to start the game. </div>
   </div>
   <div class="center-text">
     <div>下の四角形をクリックするとゲームが始まります。 </div>
+    <div>TabキーでフォーカスしてSpaceキーもしくはEnterキーでゲームが始まります。 </div>
   </div>
 
 
   <div class="center-box">
-    <canvas id="myCanvas1" width="200" height="100"
+    <canvas id="myCanvas1" width="200" height="100" tabindex="0"
       style="border:1px solid #000000; background-color: #f2f2f2;"></canvas>
   </div>
   <script>
@@ -69,12 +71,24 @@
     ]
 
     var score;
+    var uttr = new SpeechSynthesisUtterance("");
+    window.speechSynthesis.speak(uttr); // wake up 空音を一回読み上げる
 
 
     function init() {
       canvas1.width = width1;
       canvas1.height = height1;
+      // クリックで開始
       canvas1.addEventListener('click', startGame, false);
+      //キーボードで開始
+      canvas1.addEventListener('keydown', (event) => {
+        // Spaceキー(Code: Space) または Enterキー(Code: Enter) を判定
+        if (event.code === 'Space' || event.code === 'Enter') {
+          // スペースキーで画面がスクロールするのを防ぐ
+          event.preventDefault(); 
+          startGame();
+        }
+      });
       // キー押下フラグ初期化
       for (let tmpkey of allTaisyoukeys) {
         keydown[tmpkey] = false;
@@ -231,6 +245,20 @@
       let initialx = (width1 - block.width) / 2; //真ん中
       block.posx = initialx;
       block.vx = (targetx - initialx) / height1 * block.vy;
+
+      // start speech
+      // 音声読み上げの設定
+      // const uttr = new SpeechSynthesisUtterance(text);
+      uttr.text = block.letter;
+      uttr.lang = "ja-JP"; // 言語を日本語に設定
+      // uttr.rate = 1.0;     // 速度 (0.1〜10)
+      // uttr.rate = 0.1;     // 速度 (0.1〜10)
+      uttr.rate = 5;     // 速度 (0.1〜10)
+
+      // 実行
+      window.speechSynthesis.speak(uttr);
+      // end speech
+
     }
 
     function startGame() {
@@ -267,6 +295,15 @@
       gameStatus = false;
       context1.textAlign = "center"
       context1.fillText("Game Over", canvas1.width / 2, 130);
+      // start speech
+      // 音声読み上げの設定
+      uttr.text = "Game Over" + "スコアは" + score.toString() +"点です。";;
+      uttr.lang = "ja-JP"; // 言語を日本語に設定
+      uttr.rate = 3.0;     // 速度 (0.1〜10)
+
+      // 実行
+      window.speechSynthesis.speak(uttr);
+      // end speech
       score = 0;
       // 対象キーの更新
       updateTaisyoukeys();
