@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>BMP HEX Editor</title>
+  <style>
+    body {
+      font-family: monospace, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+      color: #333;
+      margin: 0;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .simpletext {
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    #drop-zone {
+      width: 100%;
+      height: 100px;
+      border: 2px dashed #888;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #fff;
+      font-size: 16px;
+      color: #666;
+      cursor: pointer;
+      margin-bottom: 20px;
+      box-sizing: border-box;
+    }
+    #drop-zone.dragover {
+      border-color: #007bff;
+      background: #e9f2ff;
+    }
+    .panel {
+      flex: 1;
+      min-width: 300px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+    .panel h3 {
+      margin-top: 0;
+    }
+    textarea {
+      width: 100%;
+      height: 400px;
+      font-family: monospace;
+      font-size: 14px;
+      padding: 10px;
+      box-sizing: border-box;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      flex-grow: 1;
+    }
+    .preview-box {
+      align-items: stretch;
+    }
+    .zoom-controls {
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #eee;
+      padding: 5px 10px;
+      border-radius: 4px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .zoom-controls label {
+      font-size: 14px;
+    }
+    #zoom-slider {
+      flex-grow: 1;
+    }
+    #zoom-value {
+      min-width: 40px;
+      text-align: right;
+    }
+
+    /* 座標軸とCanvasを表示するコンテナ */
+    .canvas-container {
+      width: 100%;
+      height: 400px;
+      overflow: auto;
+      background-color: #fafafa;
+      border: 1px solid #ccc;
+      padding: 30px; /* 軸ラベルや矢印のための余白 */
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* 軸描画用オーバーレイ */
+    #axis-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Canvas自体のズーム基準位置を左下に固定 */
+    canvas#canvas {
+      border: none;
+      background-color: #fafafa;
+      transform-origin: left bottom;
+      position: absolute;
+      left: 30px;
+      bottom: 30px;
+      
+      image-rendering: optimizeSpeed;
+      image-rendering: -moz-crisp-edges;
+      image-rendering: -o-crisp-edges;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: pixelated;
+      -ms-interpolation-mode: nearest-neighbor;
+    }
+
+    #error-msg {
+      color: red;
+      margin-top: 10px;
+      font-size: 12px;
+      min-height: 1.2em;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>BMP HEX Editor with Zoom</h1>
+  <div class="simpletext">ビットマップ画像（.bmp）をドラッグ＆ドロップすると、ファイルの中身と画像プレビューをします。
+    <br>
+    <a href="#" id="download-uploaded-btn" class="download-link">サンプル画像をダウンロード (.bmp)。</a>
+    <br>
+    ファイルの中身を変更するとプレビューが切り替わります。まずはファイルの一番最後のところを変更するのがお勧めです。
+    <br>
+    プレビュー画像の右上の色が変わります。
+  </div>
+  
+  <div class="container">
+    <div id="drop-zone">ここに小さいサイズのBMPファイルをドラッグ＆ドロップしてください</div>
+  </div>
+
+  <div class="container">
+    <div class="panel">
+      <h3>HEX Data (16進数)</h3>
+      <textarea id="hex-input" placeholder="ここにファイルの中身が16進数で表示されます。編集も可能です。"></textarea>
+      <div id="error-msg"></div>
+    </div>
+
+    <div class="panel preview-box">
+      <h3>Image Preview</h3>
+      
+      <div class="zoom-controls">
+        <label for="zoom-slider">Zoom:</label>
+        <input type="range" id="zoom-slider" min="1" max="20" value="1" step="1">
+        <span id="zoom-value">1x</span>
+      </div>
+
+      <div class="canvas-container" id="canvas-container">
+        <canvas id="axis-overlay"></canvas>
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+  </div>
+  <footer style="margin-top: 10px; font-size: 12px; color: #888;">
+    Created with Gemini.
+  </footer>
+
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const hexInput = document.getElementById('hex-input');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const axisOverlay = document.getElementById('axis-overlay');
+    const axisCtx = axisOverlay.getContext('2d');
+    const canvasContainer = document.getElementById('canvas-container');
+
+    const errorMsg = document.getElementById('error-msg');
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomValueDisplay = document.getElementById('zoom-value');
+
+    let imgWidth = 0;
+    let imgHeight = 0;
+
+    // 8x16px 24bit BMP バイナリ（非圧縮）の配列
+    const bmpBytesData = new Uint8Array([
+      // --- BMP Header (14 bytes) ---
+      0x42, 0x4D,             // Signature "BM"
+      0xBE, 0x01, 0x00, 0x00, // File size (446 bytes)
+      0x00, 0x00, 0x00, 0x00, // Reserved
+      0x36, 0x00, 0x00, 0x00, // Pixel Data Offset (54 bytes)
+
+      // --- DIB Header / BITMAPINFOHEADER (40 bytes) ---
+      0x28, 0x00, 0x00, 0x00, // Header size (40)
+      0x08, 0x00, 0x00, 0x00, // Width (8 px)
+      0x10, 0x00, 0x00, 0x00, // Height (16 px, Bottom-up)
+      0x01, 0x00,             // Color Planes (1)
+      0x18, 0x00,             // Bits per Pixel (24 bit)
+      0x00, 0x00, 0x00, 0x00, // Compression Method (0 = None)
+      0x00, 0x00, 0x00, 0x00, // Image Size (384 bytes)
+      0x00, 0x00, 0x00, 0x00, // Horizontal Resolution
+      0x00, 0x00, 0x00, 0x00, // Vertical Resolution
+      0x00, 0x00, 0x00, 0x00, // Color Palette Colors
+      0x00, 0x00, 0x00, 0x00, // Important Colors
+
+      // --- Pixel Data (24 bytes per row * 16 rows = 384 bytes) ---
+      // (全ピクセル 0x00, 0x00, 0x00 の黒画像)
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    ]);
+    // BMPファイルダウンロード処理 (Blob)
+    document.getElementById('download-uploaded-btn').addEventListener('click', function(e) {
+      e.preventDefault();
+
+      const blob = new Blob([bmpBytesData], { type: 'image/bmp' });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'sample_8by16_black_color.bmp'; // .bmp拡張子で直接保存
+      document.body.appendChild(a);
+      a.click();
+
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    // Drag & Drop イベント設定
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, preventDefaults, false);
+      document.body.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    function handleDrop(e) {
+      const dt = e.dataTransfer;
+      const files = dt.files;
+      if (files.length > 0) {
+        const file = files[0];
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const buffer = event.target.result;
+          const bytes = new Uint8Array(buffer);
+          let hexString = '';
+          for (let i = 0; i < bytes.length; i++) {
+            hexString += bytes[i].toString(16).padStart(2, '0') + ' ';
+            if ((i + 1) % 16 === 0) hexString += '\n';
+          }
+          hexInput.value = hexString.trim();
+          renderBMPFromHex();
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    hexInput.addEventListener('input', renderBMPFromHex);
+    zoomSlider.addEventListener('input', updateZoom);
+
+    function updateZoom() {
+      const scale = parseInt(zoomSlider.value, 10);
+      zoomValueDisplay.textContent = scale + 'x';
+      canvas.style.transform = `scale(${scale})`;
+      drawAxes(scale);
+    }
+
+    // 数学的2次元座標軸 (X軸・Y軸・矢印・ラベル) の描画
+    function drawAxes(scale) {
+      if (imgWidth === 0 || imgHeight === 0) return;
+
+      const padding = 30; // 軸の表示領域用のパディング
+      const scaledW = imgWidth * scale;
+      const scaledH = imgHeight * scale;
+
+      const totalW = Math.max(scaledW + padding * 2, canvasContainer.clientWidth);
+      const totalH = Math.max(scaledH + padding * 2, canvasContainer.clientHeight);
+
+      axisOverlay.width = totalW;
+      axisOverlay.height = totalH;
+
+      axisCtx.clearRect(0, 0, totalW, totalH);
+
+      // 原点の画面上座標（画像の左下）
+      const originX = padding;
+      const originY = totalH - padding;
+
+      const xAxisLength = scaledW + 15;
+      const yAxisLength = scaledH + 15;
+
+      axisCtx.strokeStyle = '#333';
+      axisCtx.fillStyle = '#333';
+      axisCtx.lineWidth = 1.5;
+      axisCtx.font = 'bold 12px monospace';
+
+      // --- X軸（横方向・右向き矢印） ---
+      axisCtx.beginPath();
+      axisCtx.moveTo(originX, originY);
+      axisCtx.lineTo(originX + xAxisLength, originY);
+      axisCtx.stroke();
+
+      // X軸矢印
+      axisCtx.beginPath();
+      axisCtx.moveTo(originX + xAxisLength, originY - 4);
+      axisCtx.lineTo(originX + xAxisLength + 8, originY);
+      axisCtx.lineTo(originX + xAxisLength, originY + 4);
+      axisCtx.fill();
+
+      // X軸ラベル
+      axisCtx.fillText('x', originX + xAxisLength + 12, originY + 4);
+
+      // --- Y軸（縦方向・上向き矢印） ---
+      axisCtx.beginPath();
+      axisCtx.moveTo(originX, originY);
+      axisCtx.lineTo(originX, originY - yAxisLength);
+      axisCtx.stroke();
+
+      // Y軸矢印
+      axisCtx.beginPath();
+      axisCtx.moveTo(originX - 4, originY - yAxisLength);
+      axisCtx.lineTo(originX, originY - yAxisLength - 8);
+      axisCtx.lineTo(originX + 4, originY - yAxisLength);
+      axisCtx.fill();
+
+      // Y軸ラベル
+      axisCtx.fillText('y', originX - 3, originY - yAxisLength - 12);
+
+      // --- 原点ラベル ---
+      axisCtx.fillText('(0,0)', originX - 25, originY + 15);
+    }
+
+    function renderBMPFromHex() {
+      errorMsg.textContent = '';
+      const hexText = hexInput.value.replace(/\s+/g, '');
+      if (!hexText) return;
+
+      if (!/^[0-9a-fA-F]*$/.test(hexText) || hexText.length % 2 !== 0) {
+        errorMsg.textContent = 'エラー: 有効なHEXデータではありません（文字数または文字種を確認してください）';
+        return;
+      }
+
+      const bytes = new Uint8Array(hexText.length / 2);
+      for (let i = 0; i < hexText.length; i += 2) {
+        bytes[i / 2] = parseInt(hexText.substr(i, 2), 16);
+      }
+
+      if (bytes.length < 54) {
+        errorMsg.textContent = 'エラー: ヘッダーサイズが不足しています（最小54バイト）';
+        return;
+      }
+
+      if (bytes[0] !== 0x42 || bytes[1] !== 0x4D) {
+        errorMsg.textContent = '警告: BMPヘッダーのシグネチャ ("BM") が不一致です';
+      }
+
+      const view = new DataView(bytes.buffer);
+      const pixelOffset = view.getUint32(10, true);
+      const width = view.getInt32(18, true);
+      const height = view.getInt32(22, true);
+      const bpp = view.getUint16(28, true);
+      const compression = view.getUint32(30, true);
+
+      if (compression !== 0) {
+        errorMsg.textContent = 'エラー: 圧縮されたBMPには対応していません（非圧縮のみ対応）';
+        return;
+      }
+      if (bpp !== 24 && bpp !== 32) {
+        errorMsg.textContent = `エラー: 現在${bpp}bit形式は未対応です（24bitまたは32bitに対応）`;
+        return;
+      }
+
+      const absHeight = Math.abs(height);
+      const isTopDown = height < 0;
+
+      imgWidth = Math.max(1, width);
+      imgHeight = Math.max(1, absHeight);
+
+      canvas.width = imgWidth;
+      canvas.height = imgHeight;
+
+      const imgData = ctx.createImageData(imgWidth, imgHeight);
+      const data = imgData.data;
+
+      const rowSize = bpp === 24 ? Math.floor((bpp * imgWidth + 31) / 32) * 4 : imgWidth * 4;
+
+      /*
+        通常のボトムアップBMP (height > 0) の場合:
+        - ファイルのデータ先頭 (y = 0) が画像の一番下（左下原点）
+        - x は 0 から width - 1 へ向かって読み込まれる（横方向が先に回る）
+      */
+      for (let y = 0; y < imgHeight; y++) {
+        // Canvas座標は上が y=0 のため反転処理を行う
+        const targetCanvasY = isTopDown ? y : (imgHeight - 1 - y);
+        const rowStart = pixelOffset + y * rowSize;
+
+        for (let x = 0; x < imgWidth; x++) {
+          const pxIndex = (targetCanvasY * imgWidth + x) * 4;
+          
+          if (bpp === 24) {
+            const bIndex = rowStart + x * 3;
+            if (bIndex + 2 < bytes.length) {
+              data[pxIndex]     = bytes[bIndex + 2]; // R
+              data[pxIndex + 1] = bytes[bIndex + 1]; // G
+              data[pxIndex + 2] = bytes[bIndex];     // B
+              data[pxIndex + 3] = 255;               // A
+            }
+          } else if (bpp === 32) {
+            const bIndex = rowStart + x * 4;
+            if (bIndex + 3 < bytes.length) {
+              data[pxIndex]     = bytes[bIndex + 2]; // R
+              data[pxIndex + 1] = bytes[bIndex + 1]; // G
+              data[pxIndex + 2] = bytes[bIndex];     // B
+              data[pxIndex + 3] = bytes[bIndex + 3]; // A
+            }
+          }
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      updateZoom();
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>画像ビューア</title>
+  <style>
+    /* コントロールエリア */
+    .controls {
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* D&Dでサイズ変更可能な表示エリア */
+    #drop-zone {
+      width: 300px;
+      height: 300px;
+      border: 2px dashed #ccc;
+      position: relative;
+      overflow: auto; /* スクロールバーを表示できるように変更 */
+      background-color: #f9f9f9;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+
+      /* マウスのD&Dでエリアサイズを変更可能にするCSS */
+      resize: both;
+      min-width: 100px;
+      min-height: 100px;
+    }
+
+    #drop-zone.dragover {
+      border-color: #007bff;
+      background-color: #e9f5ff;
+    }
+
+    /* 画像の表示設定（左上固定・ドット補間） */
+    #preview-img {
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: none;
+      
+      /* 拡大時に色がにじまない設定 */
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+
+    #placeholder {
+      color: #888;
+      font-size: 14px;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="simpletext">画像ファイルをドラッグ＆ドロップすると、
+    画像をプレビューします。拡大してもピクセルがにじみません。
+    <br>
+    画像処理の入門的な勉強にお勧めです。
+  </div>
+
+  <div class="controls">
+    <label for="zoom-slider">倍率:</label>
+    <input type="range" id="zoom-slider" min="1" max="50" value="1" step="0.1" disabled>
+    <span id="zoom-val">1x</span>
+  </div>
+
+  <div id="drop-zone">
+    <span id="placeholder">画像をD&Dしてください</span>
+    <img id="preview-img" alt="プレビュー">
+  </div>
+  <footer style="margin-top: 10px; font-size: 12px; color: #888;">
+    Created with Gemini.
+  </footer>
+  <script>
+    const dropZone = document.getElementById('drop-zone');
+    const previewImg = document.getElementById('preview-img');
+    const placeholder = document.getElementById('placeholder');
+    const zoomSlider = document.getElementById('zoom-slider');
+    const zoomVal = document.getElementById('zoom-val');
+
+    let naturalWidth = 0;
+    let naturalHeight = 0;
+
+    // ドラッグ＆ドロップイベントのデフォルト動作を解除
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, (e) => e.preventDefault(), false);
+    });
+
+    // ホバー時のスタイル変更
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    // 画像のドロップ処理
+    dropZone.addEventListener('drop', (e) => {
+      const files = e.dataTransfer.files;
+      if (files.length > 0 && files[0].type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          previewImg.src = event.target.result;
+          
+          // 画像読み込み後に元サイズを取得
+          previewImg.onload = () => {
+            naturalWidth = previewImg.naturalWidth;
+            naturalHeight = previewImg.naturalHeight;
+            
+            previewImg.style.display = 'block';
+            placeholder.style.display = 'none';
+            
+            // スライダーの有効化と初期化
+            zoomSlider.disabled = false;
+            zoomSlider.value = 1;
+            updateZoom(1);
+          };
+        };
+        reader.readAsDataURL(files[0]);
+      }
+    });
+
+    // スライダー操作イベント
+    zoomSlider.addEventListener('input', (e) => {
+      updateZoom(e.target.value);
+    });
+
+    function updateZoom(value) {
+      // transform: scale() ではなく幅と高さを変更することでスクロール領域を確定させる
+      previewImg.style.width = `${naturalWidth * value}px`;
+      previewImg.style.height = `${naturalHeight * value}px`;
+      zoomVal.textContent = `${parseFloat(value).toFixed(1)}x`;
+    }
+  </script>
+
+</body>
+</html>
